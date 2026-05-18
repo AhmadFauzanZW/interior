@@ -1,16 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useCanvasStore } from "@/stores/canvas-store";
+import { useEffect, useState, useRef } from "react";
 
 export default function BudgetTracker() {
-  const [total, setTotal] = useState(0);
+  const totalPrice = useCanvasStore((s) => s.totalPrice);
   const [displayTotal, setDisplayTotal] = useState(0);
+  const prevRef = useRef(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDisplayTotal(total), 300);
-    return () => clearTimeout(timer);
-  }, [total]);
+    const from = prevRef.current;
+    prevRef.current = totalPrice;
+    const diff = totalPrice - from;
+    const duration = Math.min(400, Math.abs(diff) * 10);
+    const start = performance.now();
+
+    function animate(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      setDisplayTotal(Math.round(from + diff * progress));
+      if (progress < 1) requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  }, [totalPrice]);
 
   return (
     <motion.div

@@ -1,12 +1,39 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment, useGLTF } from "@react-three/drei";
-import { Suspense } from "react";
+import { Bounds, OrbitControls, Environment, useGLTF } from "@react-three/drei";
+import { Suspense, useEffect, useMemo } from "react";
+import * as THREE from "three";
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url, true);
-  return <primitive object={scene.clone()} />;
+  const cloned = useMemo(() => scene.clone(), [scene]);
+
+  useEffect(() => {
+    cloned.traverse((child) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+
+      const mesh = child as THREE.Mesh;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+
+      materials.forEach((material) => {
+        if (!(material instanceof THREE.Material)) return;
+        material.side = THREE.DoubleSide;
+        material.needsUpdate = true;
+      });
+    });
+  }, [cloned]);
+
+  return (
+    <Bounds fit clip observe margin={1.2}>
+      <primitive object={cloned} />
+    </Bounds>
+  );
 }
 
 function LoadingFallback() {
@@ -40,6 +67,7 @@ export default function ModelPreview({ url, className = "" }: Props) {
         camera={{ position: [2, 1.5, 2], fov: 40 }}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
         style={{ background: "#f3f4f6" }}
+        shadows
       >
         <Suspense fallback={null}>
           <ambientLight intensity={0.7} />

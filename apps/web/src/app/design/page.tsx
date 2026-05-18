@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/ui/Header";
 import BudgetTracker from "@/components/ui/BudgetTracker";
@@ -10,6 +10,7 @@ import ActionBar from "@/components/ui/ActionBar";
 import { useRoomStore } from "@/stores/room-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useGLTF } from "@react-three/drei";
 
 const Scene = dynamic(() => import("@/components/canvas/Scene"), {
   ssr: false,
@@ -49,9 +50,12 @@ function DesignContent() {
   const width = parseFloat(searchParams.get("width") || "4");
   const setDimensions = useRoomStore((s) => s.setDimensions);
   const addItem = useCanvasStore((s) => s.addItem);
+  const selectItem = useCanvasStore((s) => s.selectItem);
   const setLoadingProductId = useUIStore((s) => s.setLoadingProductId);
 
-  setDimensions(length, width);
+  useEffect(() => {
+    setDimensions(length, width);
+  }, [length, width, setDimensions]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -73,6 +77,11 @@ function DesignContent() {
         const x = 1 + Math.random() * (length - 2);
         const z = 1 + Math.random() * (width - 2);
 
+        // Preload GLB so canvas doesn't suspend
+        if (data.glbUrl) {
+          useGLTF.preload(data.glbUrl);
+        }
+
         addItem({
           instanceId,
           productId: data.id,
@@ -85,11 +94,12 @@ function DesignContent() {
           variantId: null,
           colorHex: null,
         });
+        selectItem(instanceId);
       } catch {
         // Ignore invalid drops
       }
     },
-    [length, width, addItem, setLoadingProductId]
+    [length, width, addItem, selectItem, setLoadingProductId]
   );
 
   return (

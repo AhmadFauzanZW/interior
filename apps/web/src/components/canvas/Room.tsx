@@ -1,7 +1,6 @@
 "use client";
 
 import { useRoomStore } from "@/stores/room-store";
-import { RigidBody } from "@react-three/rapier";
 import { useMemo } from "react";
 import * as THREE from "three";
 
@@ -15,12 +14,10 @@ function Wall({
   rotation?: [number, number, number];
 }) {
   return (
-    <RigidBody type="fixed" colliders="cuboid" position={position} rotation={rotation}>
-      <mesh receiveShadow castShadow>
-        <boxGeometry args={size} />
-        <meshStandardMaterial color="#e8e4de" roughness={0.85} metalness={0.02} />
-      </mesh>
-    </RigidBody>
+    <mesh position={position} rotation={rotation} receiveShadow castShadow>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color="#e8e4de" roughness={0.85} metalness={0.02} />
+    </mesh>
   );
 }
 
@@ -44,16 +41,14 @@ export default function Room() {
   return (
     <group>
       {/* Floor */}
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[halfLength, -0.01, halfWidth]}
-          receiveShadow
-        >
-          <planeGeometry args={[length + 0.1, width + 0.1]} />
-          <primitive object={floorMaterial} attach="material" />
-        </mesh>
-      </RigidBody>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[halfLength, -0.01, halfWidth]}
+        receiveShadow
+      >
+        <planeGeometry args={[length + 0.1, width + 0.1]} />
+        <primitive object={floorMaterial} attach="material" />
+      </mesh>
 
       {/* Wall - Back (z = 0) */}
       <Wall

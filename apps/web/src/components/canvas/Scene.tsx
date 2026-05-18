@@ -2,7 +2,6 @@
 
 import { useRef, useCallback } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { Physics } from "@react-three/rapier";
 import { Environment, PerspectiveCamera, OrbitControls } from "@react-three/drei";
 import { Suspense } from "react";
 import * as THREE from "three";
@@ -76,6 +75,7 @@ function SceneContent() {
         maxDistance={20}
         enableDamping
         dampingFactor={0.08}
+        enabled={!selectedItemId}
       />
 
       <ambientLight intensity={0.6} />
@@ -122,9 +122,7 @@ export default function Scene() {
         }}
       >
         <Suspense fallback={null}>
-          <Physics gravity={[0, -9.81, 0]} debug={false}>
-            <SceneContent />
-          </Physics>
+          <SceneContent />
         </Suspense>
       </Canvas>
     </div>
