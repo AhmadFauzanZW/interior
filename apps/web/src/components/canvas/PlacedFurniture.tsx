@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, Suspense, useCallback } from "react";
+import { useRef, useState, useEffect, useMemo, Suspense } from "react";
 import { Html, useGLTF } from "@react-three/drei";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import { useCanvasStore, PlacedItem } from "@/stores/canvas-store";
 import { useUIStore } from "@/stores/ui-store";
-import { useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Props {
@@ -180,7 +180,6 @@ export default function PlacedFurniture({ item }: Props) {
   const hasModel = item.glbUrl && item.glbUrl !== "/placeholder.glb" && item.glbUrl !== "";
   const fallbackSize = useMemo(() => getVisualSize(item.dimensions), [item.dimensions]);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const { camera } = useThree();
 
   // Keep track of the last store position to detect intentional moves (not re-renders)
   const storePosRef = useRef(item.position);
@@ -215,27 +214,94 @@ export default function PlacedFurniture({ item }: Props) {
     }
   }, [item.position]);
 
-  // Keyboard controls for height adjustment (when selected)
+  // ── Game-style WASD + Space/Shift controls ──
+  // Track pressed keys for continuous movement
+  const keysRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!isSelected) return;
 
     function handleKeyDown(e: KeyboardEvent) {
-      // Don't interfere with typing
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const key = e.key === " " ? "space" : e.key.toLowerCase();
+      keysRef.current.add(key);
+      // Prevent page scrolling on Space / arrow keys
+      if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(key)) {
+        e.preventDefault();
+      }
+    }
 
-      const step = e.shiftKey ? 0.25 : 0.1;
-      const dir = e.key === "ArrowUp" ? step : e.key === "ArrowDown" ? -step : 0;
-      if (dir === 0) return;
+    function handleKeyUp(e: KeyboardEvent) {
+      const key = e.key === " " ? "space" : e.key.toLowerCase();
+      const hadMovement = keysRef.current.delete(key);
 
-      e.preventDefault();
-      const [x, y, z] = item.position;
-      const newY = Math.max(0, y + dir);
-      moveItem(item.instanceId, [x, newY, z]);
+      // When last movement key is released, sync final physics position to the store
+      if (hadMovement && rigidBodyRef.current && isSelected) {
+        const pos = rigidBodyRef.current.translation();
+        moveItem(item.instanceId, [pos.x, Math.max(0, pos.y), pos.z]);
+      }
+    }
+
+    // Also sync when selection is lost (item deselected)
+    const pos = rigidBodyRef.current?.translation();
+    if (pos) {
+      moveItem(item.instanceId, [pos.x, Math.max(0, pos.y), pos.z]);
     }
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSelected, item.position, item.instanceId, moveItem]);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      // Sync position on cleanup too
+      if (rigidBodyRef.current) {
+        const p = rigidBodyRef.current.translation();
+        moveItem(item.instanceId, [p.x, Math.max(0, p.y), p.z]);
+      }
+    };
+  }, [isSelected, item.instanceId, moveItem]);
+
+  // Continuous movement via render loop (smooth like a game)
+  useFrame((state, delta) => {
+    if (!isSelected || !rigidBodyRef.current) return;
+    const keys = keysRef.current;
+    if (keys.size === 0) return;
+
+    const speed = 2.5; // metres per second
+
+    // Camera-relative directions (horizontal only)
+    const forward = new THREE.Vector3();
+    state.camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.001) return;
+    forward.normalize();
+
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const move = new THREE.Vector3();
+    if (keys.has("w")) move.add(forward);
+    if (keys.has("s")) move.sub(forward);
+    if (keys.has("a")) move.sub(right);
+    if (keys.has("d")) move.add(right);
+
+    const vSpeed = speed * delta;
+    if (move.lengthSq() > 0) move.normalize().multiplyScalar(vSpeed);
+
+    let vDelta = 0;
+    if (keys.has("space")) vDelta = vSpeed;
+    if (keys.has("shift")) vDelta = -vSpeed;
+
+    const currentPos = rigidBodyRef.current.translation();
+    rigidBodyRef.current.setTranslation(
+      {
+        x: currentPos.x + move.x,
+        y: Math.max(0, currentPos.y + vDelta),
+        z: currentPos.z + move.z,
+      },
+      true
+    );
+  });
 
   useEffect(() => {
     if (!hasModel) {
@@ -268,6 +334,7 @@ export default function PlacedFurniture({ item }: Props) {
       ref={rigidBodyRef}
       type="dynamic"
       colliders="cuboid"
+      gravityScale={isSelected ? 0 : 1}
       enabledRotations={[false, true, false]}
     >
       <group

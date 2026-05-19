@@ -51,6 +51,7 @@ function DesignContent() {
   const setDimensions = useRoomStore((s) => s.setDimensions);
   const addItem = useCanvasStore((s) => s.addItem);
   const selectItem = useCanvasStore((s) => s.selectItem);
+  const selectedItemId = useCanvasStore((s) => s.selectedItemId);
   const setLoadingProductId = useUIStore((s) => s.setLoadingProductId);
 
   useEffect(() => {
@@ -116,6 +117,19 @@ function DesignContent() {
       <CatalogPanel />
 
       <ActionBar />
+
+      {/* Controls hint — shows when an item is selected */}
+      {selectedItemId && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40">
+          <div className="glass-dark px-4 py-2 rounded-xl flex items-center gap-4 text-xs text-white/80 shadow-lg backdrop-blur-sm">
+            <span><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">W</kbd><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">A</kbd><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">S</kbd><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">D</kbd> Move</span>
+            <span><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">Space</kbd> Up</span>
+            <span><kbd className="bg-white/20 px-1.5 py-0.5 rounded text-white font-mono text-[11px]">Shift</kbd> Down</span>
+            <span className="text-white/40">|</span>
+            <span className="text-emerald-300">Click item → fly mode (no gravity)</span>
+          </div>
+        </div>
+      )}
 
       <BudgetTracker />
     </div>
