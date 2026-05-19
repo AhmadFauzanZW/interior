@@ -41,41 +41,45 @@ export default function Room() {
 
   return (
     <group>
-      {/* Floor */}
-      <RigidBody type="fixed">
+      {/* Floor — thin cuboid collider so physics can catch items */}
+      <RigidBody type="fixed" colliders="cuboid">
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[halfLength, -0.01, halfWidth]}
+          position={[halfLength, -0.025, halfWidth]}
           receiveShadow
         >
-          <planeGeometry args={[length + 0.1, width + 0.1]} />
+          <boxGeometry args={[length + 0.1, 0.05, width + 0.1]} />
           <primitive object={floorMaterial} attach="material" />
         </mesh>
       </RigidBody>
 
-      {/* Wall - Back (z = 0) */}
-      <Wall
-        position={[halfLength, halfHeight, -halfThickness]}
-        size={[length + wallThickness * 2, wallHeight, wallThickness]}
-      />
+      {/* Walls — each wrapped in a collider so furniture bounces off them */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <Wall
+          position={[halfLength, halfHeight, -halfThickness]}
+          size={[length + wallThickness * 2, wallHeight, wallThickness]}
+        />
+      </RigidBody>
 
-      {/* Wall - Front (z = width) */}
-      <Wall
-        position={[halfLength, halfHeight, width + halfThickness]}
-        size={[length + wallThickness * 2, wallHeight, wallThickness]}
-      />
+      <RigidBody type="fixed" colliders="cuboid">
+        <Wall
+          position={[halfLength, halfHeight, width + halfThickness]}
+          size={[length + wallThickness * 2, wallHeight, wallThickness]}
+        />
+      </RigidBody>
 
-      {/* Wall - Left (x = 0) */}
-      <Wall
-        position={[-halfThickness, halfHeight, halfWidth]}
-        size={[wallThickness, wallHeight, width]}
-      />
+      <RigidBody type="fixed" colliders="cuboid">
+        <Wall
+          position={[-halfThickness, halfHeight, halfWidth]}
+          size={[wallThickness, wallHeight, width]}
+        />
+      </RigidBody>
 
-      {/* Wall - Right (x = length) */}
-      <Wall
-        position={[length + halfThickness, halfHeight, halfWidth]}
-        size={[wallThickness, wallHeight, width]}
-      />
+      <RigidBody type="fixed" colliders="cuboid">
+        <Wall
+          position={[length + halfThickness, halfHeight, halfWidth]}
+          size={[wallThickness, wallHeight, width]}
+        />
+      </RigidBody>
 
       {/* Floor grid lines for visual reference */}
       <gridHelper
