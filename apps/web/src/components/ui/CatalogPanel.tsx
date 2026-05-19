@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCatalogStore, CatalogProduct } from "@/stores/catalog-store";
 import { useCanvasStore } from "@/stores/canvas-store";
+import { useRoomStore } from "@/stores/room-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useGLTF } from "@react-three/drei";
 
@@ -22,6 +23,7 @@ export default function CatalogPanel() {
   const addItem = useCanvasStore((s) => s.addItem);
   const selectItem = useCanvasStore((s) => s.selectItem);
   const setLoadingProductId = useUIStore((s) => s.setLoadingProductId);
+  const { length, width } = useRoomStore();
 
   useEffect(() => {
     async function fetchData() {
@@ -65,6 +67,10 @@ export default function CatalogPanel() {
       useGLTF.preload(product.glbUrl);
     }
 
+    const margin = 0.5;
+    const x = margin + Math.random() * Math.max(0.1, length - margin * 2);
+    const z = margin + Math.random() * Math.max(0.1, width - margin * 2);
+
     addItem({
       instanceId,
       productId: product.id,
@@ -72,7 +78,7 @@ export default function CatalogPanel() {
       price,
       glbUrl: product.glbUrl || "",
       dimensions: product.dimensions,
-      position: [2.5, 0, 2],
+      position: [x, 0.5, z],
       rotation: [0, 0, 0],
       variantId: null,
       colorHex: null,

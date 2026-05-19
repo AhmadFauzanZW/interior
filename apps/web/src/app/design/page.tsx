@@ -74,8 +74,9 @@ function DesignContent() {
         const instanceId = crypto.randomUUID();
         const price = Number(data.basePrice);
 
-        const x = 1 + Math.random() * (length - 2);
-        const z = 1 + Math.random() * (width - 2);
+        const margin = 0.5;
+        const x = margin + Math.random() * Math.max(0.1, length - margin * 2);
+        const z = margin + Math.random() * Math.max(0.1, width - margin * 2);
 
         // Preload GLB so canvas doesn't suspend
         if (data.glbUrl) {

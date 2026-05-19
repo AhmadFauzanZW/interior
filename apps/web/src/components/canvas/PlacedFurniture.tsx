@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo, Suspense } from "react";
 import { Html, useGLTF } from "@react-three/drei";
+import { RigidBody } from "@react-three/rapier";
 import { useCanvasStore, PlacedItem } from "@/stores/canvas-store";
 import { useUIStore } from "@/stores/ui-store";
 import * as THREE from "three";
@@ -26,12 +27,14 @@ function Model({
   dimensions,
   hovered,
   isSelected,
+  onError,
 }: {
   url: string;
   colorHex: string | null;
   dimensions: { width: number; height: number; depth: number } | null;
   hovered: boolean;
   isSelected: boolean;
+  onError?: () => void;
 }) {
   const { scene } = useGLTF(url, true);
   const cloned = useMemo(() => scene.clone(), [scene]);
@@ -200,10 +203,15 @@ export default function PlacedFurniture({ item }: Props) {
     clearTimeout(tooltipDelay.current);
   };
 
+  const rotation: [number, number, number] = item.rotation as [number, number, number];
+
   return (
-    <group
+    <RigidBody
+      type="dynamic"
+      colliders="cuboid"
       position={item.position}
-      rotation={item.rotation as any}
+      rotation={rotation}
+      enabledRotations={[false, true, false]}
     >
       <group
         onClick={(e) => {
@@ -276,6 +284,6 @@ export default function PlacedFurniture({ item }: Props) {
           </div>
         </Html>
       )}
-    </group>
+    </RigidBody>
   );
 }

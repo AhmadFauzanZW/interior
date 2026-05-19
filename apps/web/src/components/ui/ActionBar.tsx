@@ -7,7 +7,7 @@ export default function ActionBar() {
   const selectedItemId = useCanvasStore((s) => s.selectedItemId);
   const placedItems = useCanvasStore((s) => s.placedItems);
   const removeItem = useCanvasStore((s) => s.removeItem);
-  const moveItem = useCanvasStore((s) => s.moveItem);
+  const rotateItem = useCanvasStore((s) => s.rotateItem);
   const selectItem = useCanvasStore((s) => s.selectItem);
 
   const selectedItem = placedItems.find((i) => i.instanceId === selectedItemId);
@@ -20,12 +20,9 @@ export default function ActionBar() {
 
   function handleRotate() {
     if (selectedItem) {
-      const [x, y, z] = selectedItem.rotation;
-      moveItem(selectedItem.instanceId, [selectedItem.position[0], selectedItem.position[1], selectedItem.position[2]]);
-      selectItem(selectedItem.instanceId);
-      // rotate by 45 degrees
-      const newRotation: [number, number, number] = [x, y + Math.PI / 4, z];
-      useCanvasStore.getState().rotateItem(selectedItem.instanceId, newRotation);
+      const [, y] = selectedItem.rotation;
+      const newRotation: [number, number, number] = [0, y + Math.PI / 4, 0];
+      rotateItem(selectedItem.instanceId, newRotation);
     }
   }
 
