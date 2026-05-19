@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, Suspense } from "react";
+import { useRef, useState, useEffect, useMemo, Suspense, useCallback } from "react";
 import { Html, useGLTF } from "@react-three/drei";
-import { RigidBody } from "@react-three/rapier";
+import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import { useCanvasStore, PlacedItem } from "@/stores/canvas-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Props {
@@ -174,10 +175,67 @@ export default function PlacedFurniture({ item }: Props) {
   const selectItem = useCanvasStore((s) => s.selectItem);
   const selectedItemId = useCanvasStore((s) => s.selectedItemId);
   const setLoadingProductId = useUIStore((s) => s.setLoadingProductId);
+  const moveItem = useCanvasStore((s) => s.moveItem);
   const isSelected = selectedItemId === item.instanceId;
-
   const hasModel = item.glbUrl && item.glbUrl !== "/placeholder.glb" && item.glbUrl !== "";
   const fallbackSize = useMemo(() => getVisualSize(item.dimensions), [item.dimensions]);
+  const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const { camera } = useThree();
+
+  // Keep track of the last store position to detect intentional moves (not re-renders)
+  const storePosRef = useRef(item.position);
+  const [physPos, setPhysPos] = useState<[number, number, number]>(item.position);
+
+  // Set initial physics position once on mount via ref (NOT via prop — avoids
+  // overriding gravity on every re-render)
+  useEffect(() => {
+    if (rigidBodyRef.current) {
+      rigidBodyRef.current.setTranslation(
+        { x: physPos[0], y: physPos[1], z: physPos[2] },
+        true
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync physics position when the store position changes (user click-move)
+  useEffect(() => {
+    const [sx, sy, sz] = item.position;
+    const [px, py, pz] = storePosRef.current;
+    if (sx !== px || sy !== py || sz !== pz) {
+      storePosRef.current = item.position;
+      setPhysPos(item.position);
+      if (rigidBodyRef.current) {
+        rigidBodyRef.current.setTranslation(
+          { x: sx, y: sy, z: sz },
+          true
+        );
+        rigidBodyRef.current.wakeUp();
+      }
+    }
+  }, [item.position]);
+
+  // Keyboard controls for height adjustment (when selected)
+  useEffect(() => {
+    if (!isSelected) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't interfere with typing
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const step = e.shiftKey ? 0.25 : 0.1;
+      const dir = e.key === "ArrowUp" ? step : e.key === "ArrowDown" ? -step : 0;
+      if (dir === 0) return;
+
+      e.preventDefault();
+      const [x, y, z] = item.position;
+      const newY = Math.max(0, y + dir);
+      moveItem(item.instanceId, [x, newY, z]);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSelected, item.position, item.instanceId, moveItem]);
 
   useEffect(() => {
     if (!hasModel) {
@@ -207,10 +265,9 @@ export default function PlacedFurniture({ item }: Props) {
 
   return (
     <RigidBody
+      ref={rigidBodyRef}
       type="dynamic"
       colliders="cuboid"
-      position={item.position}
-      rotation={rotation}
       enabledRotations={[false, true, false]}
     >
       <group

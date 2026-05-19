@@ -90,7 +90,7 @@ function DesignContent() {
           price,
           glbUrl: data.glbUrl || "",
           dimensions: data.dimensions || null,
-          position: [x, 0.5, z],
+          position: [x, 0, z],
           rotation: [0, 0, 0],
           variantId: null,
           colorHex: null,

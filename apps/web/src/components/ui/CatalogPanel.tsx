@@ -78,7 +78,7 @@ export default function CatalogPanel() {
       price,
       glbUrl: product.glbUrl || "",
       dimensions: product.dimensions,
-      position: [x, 0.5, z],
+      position: [x, 0, z],
       rotation: [0, 0, 0],
       variantId: null,
       colorHex: null,
