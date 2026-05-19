@@ -33,7 +33,7 @@ function FloorClickHandler() {
         const margin = 0.5;
         const x = Math.max(margin, Math.min(length - margin, hit.x));
         const z = Math.max(margin, Math.min(width - margin, hit.z));
-        moveItem(selectedItemId, [x, 0.5, z]);
+        moveItem(selectedItemId, [x, 0, z]);
       }
     },
     [selectedItemId, camera, raycaster, gl, length, width, moveItem]
